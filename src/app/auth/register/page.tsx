@@ -79,7 +79,7 @@ export default function RegisterPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Redirect to welcome page for customer
-      router.push("/welcome");
+        router.push("/welcome");
     } catch (error) {
       setError("Registration failed. Please try again.");
     } finally {
@@ -118,15 +118,15 @@ export default function RegisterPage() {
       title="Create Account"
       subtitle="Fill in your details to get started"
     >
-      {/* Register Form */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
+          {/* Register Form */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
 
-        {/* Role Selection */}
+            {/* Role Selection */}
         <RoleSelector 
           selectedRole={selectedRole} 
           onRoleChange={handleRoleChange} 
@@ -138,27 +138,27 @@ export default function RegisterPage() {
             <form onSubmit={customerForm.handleSubmit(onCustomerSubmit)} className="space-y-6">
               <CustomFormField
                 control={customerForm.control}
-                name="name"
+                  name="name"
                 label="Full Name"
                 placeholder="Enter your full name"
-                type="text"
+                            type="text"
                 icon={User}
               />
 
               <CustomFormField
                 control={customerForm.control}
-                name="email"
+                  name="email"
                 label="Email Address"
                 placeholder="Enter your email"
-                type="email"
+                            type="email"
                 icon={Mail}
               />
 
               <CustomFormField
                 control={customerForm.control}
-                name="password"
+                  name="password"
                 label="Password"
-                placeholder="Create a password"
+                            placeholder="Create a password"
                 type="password"
                 icon={Lock}
                 showPasswordToggle={true}
@@ -168,9 +168,9 @@ export default function RegisterPage() {
 
               <CustomFormField
                 control={customerForm.control}
-                name="confirmPassword"
+                  name="confirmPassword"
                 label="Confirm Password"
-                placeholder="Confirm your password"
+                            placeholder="Confirm your password"
                 type="password"
                 icon={Lock}
                 showPasswordToggle={true}
@@ -269,57 +269,57 @@ export default function RegisterPage() {
                 showPasswordToggle={true}
                 showPassword={showConfirmPassword}
                 onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
-              />
-
-              <div className="flex items-start">
-                <input
-                  id="terms-organizer"
-                  name="terms"
-                  type="checkbox"
-                  className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded mt-1"
-                  required
                 />
-                <label htmlFor="terms-organizer" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                  I agree to the{" "}
-                  <a href="#" className="text-purple-600 hover:text-purple-500">
-                    Terms of Service
-                  </a>{" "}
-                  and{" "}
-                  <a href="#" className="text-purple-600 hover:text-purple-500">
-                    Privacy Policy
-                  </a>
-                </label>
-              </div>
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 transform hover:scale-105" 
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Creating account...</span>
-                  </div>
-                ) : (
+                <div className="flex items-start">
+                  <input
+                  id="terms-organizer"
+                    name="terms"
+                    type="checkbox"
+                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded mt-1"
+                    required
+                  />
+                <label htmlFor="terms-organizer" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    I agree to the{" "}
+                    <a href="#" className="text-purple-600 hover:text-purple-500">
+                      Terms of Service
+                    </a>{" "}
+                    and{" "}
+                    <a href="#" className="text-purple-600 hover:text-purple-500">
+                      Privacy Policy
+                    </a>
+                  </label>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 transform hover:scale-105" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Creating account...</span>
+                    </div>
+                  ) : (
                   "Create Organizer Account"
-                )}
-              </Button>
-            </form>
-          </Form>
+                  )}
+                </Button>
+              </form>
+            </Form>
         )}
 
-        {/* Login Link */}
-        <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
-          Already have an account?{" "}
-          <Link
-            href="/auth/login"
-            className="font-medium text-purple-600 hover:text-purple-500 transition-colors"
-          >
-            Sign in here
-          </Link>
-        </p>
-      </div>
+            {/* Login Link */}
+            <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+              Already have an account?{" "}
+              <Link
+                href="/auth/login"
+                className="font-medium text-purple-600 hover:text-purple-500 transition-colors"
+              >
+                Sign in here
+              </Link>
+            </p>
+          </div>
     </AuthLayout>
   );
 }

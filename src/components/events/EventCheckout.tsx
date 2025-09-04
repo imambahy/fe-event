@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Calendar, Clock, User, Ticket } from "lucide-react";
-import { EventWithDetails, TicketSelection } from "@/types/event.type";
+import { EventWithDetails } from "@/types/event.type";
+import { TicketSelection } from "@/types/checkout.type";
 
 interface EventCheckoutProps {
   event: EventWithDetails;
@@ -20,6 +21,40 @@ export default function EventCheckout({ event, ticketSelections }: EventCheckout
 
   const getTotalQuantity = () => {
     return ticketSelections.reduce((total, selection) => total + selection.quantity, 0);
+  };
+
+  const handleCheckout = () => {
+    if (ticketSelections.length === 0) {
+      return;
+    }
+
+    // Create order summary
+    const orderSummary = {
+      eventId: event.id,
+      eventTitle: event.title,
+      eventLocation: event.location,
+      eventDate: event.startDate,
+      eventTime: event.time || "18:00",
+      ticketSelections: ticketSelections.map(selection => {
+        const ticketType = event.ticketTypes?.find(t => t.id === selection.ticketTypeId);
+        return {
+          ticketTypeId: selection.ticketTypeId,
+          ticketType: ticketType?.name || "Unknown",
+          quantity: selection.quantity,
+          price: ticketType?.price || 0,
+        };
+      }),
+      totalAmount: getTotalPrice(),
+      pointsUsed: 0, // Will be calculated in payment page
+      voucherCode: undefined,
+      couponCode: undefined,
+    };
+
+    // Encode order summary for URL
+    const encodedOrder = encodeURIComponent(JSON.stringify(orderSummary));
+    
+    // Redirect ke payment page
+    window.location.href = `/payment?order=${encodedOrder}`;
   };
 
   return (
@@ -70,11 +105,12 @@ export default function EventCheckout({ event, ticketSelections }: EventCheckout
           <div className="border-t pt-4 mb-6">
             <div className="flex justify-between items-center">
               <span className="font-semibold">Total price</span>
-              <span className="font-semibold text-lg">Rp {getTotalPrice().toLocaleString()}</span>
+                              <span className="font-semibold text-lg">Rp {getTotalPrice().toLocaleString('en-US')}</span>
             </div>
           </div>
 
           <Button 
+            onClick={handleCheckout}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white"
             disabled={getTotalQuantity() === 0}
           >

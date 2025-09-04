@@ -33,7 +33,7 @@ export default function EventCard({ event }: EventCardProps) {
     ? Math.min(...event.ticketTypes.map(ticket => ticket.price))
     : 0;
   
-  const priceDisplay = lowestPrice === 0 ? "Free" : `Rp ${lowestPrice.toLocaleString()}`;
+  const priceDisplay = lowestPrice === 0 ? "Free" : `Rp ${lowestPrice.toLocaleString('en-US')}`;
 
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
@@ -114,7 +114,7 @@ export default function EventCard({ event }: EventCardProps) {
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Users className="w-4 h-4" />
-            <span>{(event.totalAttendees || 0).toLocaleString()} attendees</span>
+            <span>{(event.totalAttendees || 0).toLocaleString('en-US')} attendees</span>
           </div>
         </div>
 

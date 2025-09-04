@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,8 @@ interface EventFiltersProps {
   onSortByChange: (sort: string) => void;
 }
 
-export default function EventFilters({
+// MEMOIZED: EventFilters component for better performance
+const EventFilters = memo<EventFiltersProps>(({
   categories,
   selectedCategory,
   onCategoryChange,
@@ -35,7 +37,32 @@ export default function EventFilters({
   onLocationChange,
   sortBy,
   onSortByChange,
-}: EventFiltersProps) {
+}) => {
+  // OPTIMIZED: use useCallback for event handlers
+  const handleCategoryChange = useCallback((category: string) => {
+    onCategoryChange(category);
+  }, [onCategoryChange]);
+
+  const handleToggleFilters = useCallback(() => {
+    onToggleFilters();
+  }, [onToggleFilters]);
+
+  const handleDateRangeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onDateRangeChange(e.target.value);
+  }, [onDateRangeChange]);
+
+  const handlePriceRangeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    onPriceRangeChange(e.target.value);
+  }, [onPriceRangeChange]);
+
+  const handleLocationChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onLocationChange(e.target.value);
+  }, [onLocationChange]);
+
+  const handleSortByChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    onSortByChange(e.target.value);
+  }, [onSortByChange]);
+
   return (
     <section className="bg-white py-6 border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,7 +78,7 @@ export default function EventFilters({
                     ? "bg-purple-600 hover:bg-purple-700"
                     : "hover:bg-gray-200"
                 }`}
-                onClick={() => onCategoryChange(category)}
+                onClick={() => handleCategoryChange(category)}
               >
                 {category}
               </Badge>
@@ -62,7 +89,7 @@ export default function EventFilters({
           <Button
             variant="outline"
             size="sm"
-            onClick={onToggleFilters}
+            onClick={handleToggleFilters}
             className="flex items-center gap-2"
           >
             <Filter className="w-4 h-4" />
@@ -87,7 +114,7 @@ export default function EventFilters({
                   type="date" 
                   className="w-full" 
                   value={dateRange} 
-                  onChange={(e) => onDateRangeChange(e.target.value)} 
+                  onChange={handleDateRangeChange} 
                 />
               </div>
               <div>
@@ -97,7 +124,7 @@ export default function EventFilters({
                 <select 
                   className="w-full px-3 py-2 border border-gray-300 rounded-md" 
                   value={priceRange} 
-                  onChange={(e) => onPriceRangeChange(e.target.value)}
+                  onChange={handlePriceRangeChange}
                 >
                   <option>Any Price</option>
                   <option>Free</option>
@@ -114,7 +141,7 @@ export default function EventFilters({
                   placeholder="Enter location" 
                   className="w-full" 
                   value={location} 
-                  onChange={(e) => onLocationChange(e.target.value)} 
+                  onChange={handleLocationChange} 
                 />
               </div>
               <div>
@@ -124,10 +151,11 @@ export default function EventFilters({
                 <select 
                   className="w-full px-3 py-2 border border-gray-300 rounded-md" 
                   value={sortBy} 
-                  onChange={(e) => onSortByChange(e.target.value)}
+                  onChange={handleSortByChange}
                 >
                   <option>Most Popular</option>
                   <option>Newest</option>
+                  <option>Oldest</option>
                   <option>Price: Low to High</option>
                   <option>Price: High to Low</option>
                 </select>
@@ -138,4 +166,8 @@ export default function EventFilters({
       </div>
     </section>
   );
-}
+});
+
+EventFilters.displayName = "EventFilters";
+
+export default EventFilters;

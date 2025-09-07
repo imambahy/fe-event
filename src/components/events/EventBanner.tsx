@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { EventWithDetails } from "@/types/event.type";
 
 interface EventBannerProps {
@@ -10,14 +9,7 @@ interface EventBannerProps {
 export default function EventBanner({ event }: EventBannerProps) {
   return (
     <div className="relative mb-8">
-      <div className="w-full h-64 bg-gradient-to-r from-purple-600 to-orange-500 rounded-lg overflow-hidden">
-        <Image
-          src={event.image || "/placeholder-event.jpg"}
-          alt={event.title}
-          fill
-          className="object-cover"
-          priority
-        />
+      <div className="w-full h-64 bg-gradient-to-r from-purple-600 to-orange-500 rounded-lg overflow-hidden flex items-center justify-center">
         <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
           <div className="text-center text-white">
             <h1 className="text-4xl font-bold mb-2">{event.title}</h1>

@@ -2,30 +2,77 @@
 
 import { useState } from "react";
 import { use } from "react";
-import { EventWithDetails, TicketSelection } from "@/types/event.type";
-import { dummyEvents } from "@/data/events";
+import { EventWithDetails, TicketType } from "@/types/event.type";
+import { TicketSelection } from "@/types/checkout.type";
 import { notFound } from "next/navigation";
 
-// Components
+// hooks buat API calls
+import { useEventBySlug } from "@/hooks/api/useEvents";
+import { useCreateTransaction } from "@/hooks/api/useTransactions";
+import { useAuth } from "@/contexts/AuthContext";
+import { isEventExpired } from "@/utils/event.utils";
+
+// komponen-komponen UI
 import EventHeader from "@/components/events/EventHeader";
 import EventBanner from "@/components/events/EventBanner";
 import EventTabs from "@/components/events/EventTabs";
 import EventDescription from "@/components/events/EventDescription";
 import TicketSelector from "@/components/events/TicketSelector";
 import EventCheckout from "@/components/events/EventCheckout";
+import ReviewsSection from "@/components/events/ReviewsSection";
 import Footer from "@/components/landing/Footer";
+
+// komponen loading buat tampilan sementara
+function EventLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <EventHeader />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="animate-pulse">
+          <div className="bg-gray-200 h-64 rounded-lg mb-8"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+            </div>
+            <div className="lg:col-span-1">
+              <div className="bg-gray-200 h-96 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
 
 export default function EventDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [selectedTab, setSelectedTab] = useState<"description" | "tickets">("description");
   const [ticketSelections, setTicketSelections] = useState<TicketSelection[]>([]);
 
-  // Unwrap params using React.use() for Next.js 15
+  // ambil slug dari params pake React.use() buat Next.js 15
   const { slug } = use(params);
+ 
+  // 🔒 AUTH: Get authentication status
+  const { isAuthenticated, setRedirectUrl } = useAuth();
 
-  // Find event by slug
-  const event = dummyEvents.find(e => e.slug === slug);
+  // panggil API buat dapetin event berdasarkan slug
+  const { data: eventResponse, isLoading, error } = useEventBySlug(slug);
   
-  if (!event) {
+  // hook buat bikin transaction
+  const createTransactionMutation = useCreateTransaction();
+  
+  // ambil data event dari response
+  const event = eventResponse?.data;
+
+  // handle kalo lagi loading
+  if (isLoading) {
+    return <EventLoading />;
+  }
+
+  // handle kalo ada error
+  if (error || !event) {
     notFound();
   }
 
@@ -34,8 +81,33 @@ export default function EventDetailPage({ params }: { params: Promise<{ slug: st
       const existing = prev.find(t => t.ticketTypeId === ticketTypeId);
       const newQuantity = (existing?.quantity || 0) + change;
       
+      // cari ticket type buat cek apakah gratis
+      const ticketType = event.ticketTypes?.find((t: TicketType) => t.id === ticketTypeId);
+      const isFreeTicket = ticketType?.price === 0;
+      
+      // hitung total tiket gratis yang udah dipilih
+      const currentFreeTickets = prev.reduce((total, selection) => {
+        const type = event.ticketTypes?.find((t: TicketType) => t.id === selection.ticketTypeId);
+        return total + (type?.price === 0 ? selection.quantity : 0);
+      }, 0);
+      
+      // cek limit tiket gratis (max 5 tiket gratis per user)
+      const FREE_TICKET_LIMIT = 5;
+      if (isFreeTicket && change > 0) {
+        const newFreeTickets = currentFreeTickets + change;
+        if (newFreeTickets > FREE_TICKET_LIMIT) {
+          // jangan kasih lewat limit
+          return prev;
+        }
+      }
+      
       if (newQuantity <= 0) {
         return prev.filter(t => t.ticketTypeId !== ticketTypeId);
+      }
+      
+      // cek seat yang tersedia
+      if (ticketType && newQuantity > ticketType.availableSeats) {
+        return prev; // jangan kasih lewat seat yang tersedia
       }
       
       if (existing) {
@@ -45,32 +117,94 @@ export default function EventDetailPage({ params }: { params: Promise<{ slug: st
             : t
         );
       } else {
-        return [...prev, { ticketTypeId, quantity: newQuantity }];
+        return [...prev, { 
+          ticketTypeId, 
+          ticketType: ticketType?.name || '', 
+          price: ticketType?.price || 0, 
+          quantity: newQuantity 
+        }];
       }
     });
   };
 
+  const handleCheckout = async (checkoutData: {
+    pointsToUse: number;
+    voucherCode?: string;
+    couponCode?: string;
+  }) => {
+    // 🚫 EXPIRED EVENT CHECK: Cek apakah event sudah expired
+    if (isEventExpired(event)) {
+      alert('Maaf, event ini sudah berakhir dan tidak dapat dibeli lagi.');
+      return;
+    }
+
+    try {
+      // bikin transaction buat tiap ticket selection
+      const transactionPromises = ticketSelections.map(selection => {
+        const transactionData: any = {
+          ticketTypeId: selection.ticketTypeId,
+          quantity: selection.quantity,
+          pointsUsed: checkoutData.pointsToUse || 0,
+        };
+
+        // Only add couponCode if it's not empty
+        if (checkoutData.couponCode && checkoutData.couponCode.trim() !== '') {
+          transactionData.couponCode = checkoutData.couponCode.trim();
+        }
+
+        // Only add voucherCode if it's not empty
+        if (checkoutData.voucherCode && checkoutData.voucherCode.trim() !== '') {
+          transactionData.voucherCode = checkoutData.voucherCode.trim();
+        }
+
+        console.log('Sending transaction data:', transactionData);
+
+        return createTransactionMutation.mutateAsync({
+          eventId: event.id,
+          data: transactionData
+        });
+      });
+
+      const transactions = await Promise.all(transactionPromises);
+      
+      // Ambil transaction pertama untuk redirect ke payment
+      const firstTransaction = transactions[0];
+      
+      // redirect ke payment page dengan transaction ID
+      window.location.href = `/payment?transactionId=${firstTransaction.data.id}`;
+      
+    } catch (error) {
+      console.error('Checkout gagal:', error);
+      // handle error (tampilin toast, dll)
+    }
+  };
+
+  const totalAmount = ticketSelections.reduce((total, selection) => 
+    total + (selection.price * selection.quantity), 0
+  );
+
+  const totalTickets = ticketSelections.reduce((total, selection) => 
+    total + selection.quantity, 0
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <EventHeader />
-
+      
+      <EventBanner event={event} />
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content Area */}
-          <div className="lg:col-span-2">
-            <EventBanner event={event} />
-            
+          {/* Kolom Kiri - Detail Event */}
+          <div className="lg:col-span-2 space-y-6">
             <EventTabs 
-              selectedTab={selectedTab}
-              onTabChange={setSelectedTab}
+              selectedTab={selectedTab} 
+              onTabChange={setSelectedTab} 
             />
-
-            {/* Tab Content */}
-            {selectedTab === "description" && (
+            
+            {selectedTab === "description" ? (
               <EventDescription event={event} />
-            )}
-
-            {selectedTab === "tickets" && (
+            ) : (
               <TicketSelector
                 event={event}
                 ticketSelections={ticketSelections}
@@ -79,16 +213,27 @@ export default function EventDetailPage({ params }: { params: Promise<{ slug: st
             )}
           </div>
 
-          {/* Right Sidebar - Event Summary & Checkout */}
+          {/* Kolom Kanan - Checkout */}
           <div className="lg:col-span-1">
-            <EventCheckout 
+            <EventCheckout
               event={event}
               ticketSelections={ticketSelections}
+              isAuthenticated={isAuthenticated}
+              onLoginRequired={() => {
+                // 🔒 AUTH: Set redirect URL dan redirect ke login
+                setRedirectUrl(window.location.pathname);
+                window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+              }}
             />
           </div>
         </div>
-      </div>
 
+        {/* Reviews Section */}
+        <div className="mt-12">
+          <ReviewsSection eventId={event.id} eventTitle={event.title} />
+        </div>
+      </div>
+      
       <Footer />
     </div>
   );

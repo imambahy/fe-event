@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
@@ -10,21 +9,7 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ searchQuery, onSearchChange }: HeroSectionProps) {
-  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-
-  // Debounce effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onSearchChange(localSearchQuery);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [localSearchQuery, onSearchChange]);
-
-  // Update local state when prop changes
-  useEffect(() => {
-    setLocalSearchQuery(searchQuery);
-  }, [searchQuery]);
+  // Remove local state and debounce - let parent handle it
 
   return (
     <section className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-20">
@@ -43,8 +28,8 @@ export default function HeroSection({ searchQuery, onSearchChange }: HeroSection
             <Input
               type="text"
               placeholder="Search events, locations, or categories..."
-              value={localSearchQuery}
-              onChange={(e) => setLocalSearchQuery(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
               className="pl-10 pr-4 py-3 text-lg bg-white text-gray-900 placeholder-gray-500 border-0 rounded-lg shadow-lg"
             />
           </div>

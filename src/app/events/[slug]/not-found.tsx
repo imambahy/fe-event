@@ -17,7 +17,7 @@ export default function EventNotFound() {
           Please check the URL or browse our available events.
         </p>
         <div className="flex gap-4 justify-center">
-          <Link href="/landing">
+          <Link href="/">
             <Button className="flex items-center gap-2">
               <Home className="w-4 h-4" />
               Browse Events

@@ -1,21 +1,52 @@
-
-// ENUM DEFINITIONS
-export enum TransactionStatus {
-  WAITING_FOR_PAYMENT = "waiting_for_payment",
-  WAITING_FOR_CONFIRMATION = "waiting_for_confirmation",
-  DONE = "done",
-  REJECTED = "rejected",
-  EXPIRED = "expired",
-  CANCELED = "canceled",
+export interface CreateEventDto {
+  title: string;
+  description: string;
+  category: string;
+  location: string;
+  startDate: Date;
+  endDate: Date;
+  ticketTypes: CreateTicketTypeDto[];
 }
+
+export interface CreateTicketTypeDto {
+  name: string;
+  price: number;
+  totalSeats: number;
+}
+
+export interface UpdateEventDto {
+  title?: string;
+  description?: string;
+  category?: string;
+  location?: string;
+  startDate?: Date;
+  endDate?: Date;
+  published?: boolean;
+}
+
+// Frontend request types (alias untuk DTO)
+export type CreateEventRequest = CreateEventDto;
+export type CreateTicketTypeRequest = CreateTicketTypeDto;
+export type UpdateEventRequest = UpdateEventDto;
+
+// Import API response types from dedicated file
+import type { ApiResponseDto, PaginatedResponseDto } from './api.type';
+export type { ApiResponseDto, PaginatedResponseDto } from './api.type';
+
+// Frontend response types (alias untuk DTO)
+export type ApiResponse<T> = ApiResponseDto<T>;
+export type PaginatedResponse<T> = PaginatedResponseDto<T>;
+
+// Import TransactionStatus from dedicated file
+export type { TransactionStatus } from './transaction.type';
 
 export enum VoucherStatus {
-  ACTIVE = "active",
-  USED = "used",
-  EXPIRED = "expired",
+  ACTIVE = "ACTIVE",
+  USED = "USED",
+  EXPIRED = "EXPIRED",
 }
 
-// EVENT MANAGEMENT
+// Database models
 export interface Event {
   id: number;
   organizerId: number;
@@ -30,6 +61,7 @@ export interface Event {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
+  time?: string;
 }
 
 export interface TicketType {
@@ -41,7 +73,6 @@ export interface TicketType {
   availableSeats: number;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
 }
 
 export interface Review {
@@ -51,31 +82,16 @@ export interface Review {
   rating: number;
   comment: string;
   createdAt: string;
-  deletedAt?: string;
-}
-
-// TRANSACTIONS
-export interface Transaction {
-  id: number;
-  userId: number;
-  organizerId: number;
-  status: TransactionStatus;
-  ticketTypeId: number;
-  quantity: number;
-  unitPrice: number;
-  totalAmount: number;
-  pointsUsed: number;
-  couponId?: number;
-  voucherId?: number;
-  finalAmount: number;
-  paymentProof?: string;
-  expiresAt: string;
-  createdAt: string;
   updatedAt: string;
-  deletedAt?: string;
+  user: {
+    id: number;
+    name: string;
+  };
 }
 
-// PROMO SYSTEM
+// Import Transaction from dedicated file
+export type { Transaction } from './transaction.type';
+
 export interface Voucher {
   id: number;
   organizerId: number;
@@ -108,6 +124,7 @@ export interface UserVoucher {
   usedAt?: string;
   expiresAt: string;
   createdAt: string;
+  voucher: Voucher;
 }
 
 export interface UserCoupon {
@@ -118,38 +135,22 @@ export interface UserCoupon {
   usedAt?: string;
   expiresAt: string;
   createdAt: string;
+  coupon: Coupon;
 }
 
-// For frontend display (includes computed fields)
 export interface EventWithDetails extends Event {
-  organizer?: {
+  ticketTypes: TicketType[];
+  reviews: Review[];
+  organizer: {
     id: number;
     name: string;
     email: string;
   };
-  ticketTypes?: TicketType[];
-  reviews?: Review[];
+  image?: string;
+  time?: string;
   averageRating?: number;
   totalReviews?: number;
   totalAttendees?: number;
   isFree?: boolean;
   isFeatured?: boolean;
-  image?: string;
-  time?: string;
-}
-
-// Frontend filter interface
-export interface EventFilters {
-  searchQuery: string;
-  selectedCategory: string;
-  dateRange: string;
-  priceRange: string;
-  location: string;
-  sortBy: string;
-}
-
-// Ticket selection for event detail page
-export interface TicketSelection {
-  ticketTypeId: number;
-  quantity: number;
 }

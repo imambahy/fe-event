@@ -18,7 +18,6 @@ export function useEvents(params?: {
   });
 }
 
-
 export function useEventBySlug(slug: string) {
   return useQuery({
     queryKey: ['event', 'slug', slug],

@@ -16,17 +16,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Handle CORS errors
-    if (error.code === 'ERR_NETWORK' || error.message.includes('CORS')) {
-      console.error('CORS Error:', error);
+    if (error.code === "ERR_NETWORK" || error.message.includes("CORS")) {
+      console.error("CORS Error:", error);
     }
-    
+
     // Handle 401 Unauthorized - clear auth data and redirect to login
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/auth/login";
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -76,7 +76,8 @@ export const API_ENDPOINTS = {
     GET_ALL: "/transaction/transactions",
     GET_BY_ID: (id: number) => `/transaction/transactions/${id}`,
     GET_MY_TRANSACTIONS: "/transaction/transactions",
-    UPLOAD_PAYMENT: (id: number) => `/transaction/transactions/${id}/payment-proof`,
+    UPLOAD_PAYMENT: (id: number) =>
+      `/transaction/transactions/${id}/payment-proof`,
     UPDATE_STATUS: (id: number) => `/transaction/transactions/${id}/status`,
     STATS: "/transaction/transaction-stats",
   },

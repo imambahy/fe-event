@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from "react";
 import { User, AuthResponse } from "@/types/auth.type";
 import { AuthService } from "@/services/api/auth.service";
 
@@ -29,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const token = AuthService.getToken();
         const userData = AuthService.getUser();
-        
+
         if (token && userData) {
           setUser(userData);
         }
@@ -45,36 +53,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // OPTIMIZED: Memoize login function
-  const login = useCallback(async (email: string, password: string) => {
-    try {
-      setIsLoading(true);
-      const response = await AuthService.login({ email, password });
-      
-      if (response.token) {
-        AuthService.setToken(response.token);
-      }
-      AuthService.setUser(response.user);
-      setUser(response.user);
+  const login = useCallback(
+    async (email: string, password: string) => {
+      try {
+        setIsLoading(true);
+        const response = await AuthService.login({ email, password });
 
-      // 🔒 REDIRECT LOGIC: Handle redirect after successful login
-      if (redirectUrl) {
-        const targetUrl = redirectUrl;
-        setRedirectUrl(null); // Clear redirect URL
-        window.location.href = targetUrl;
+        if (response.token) {
+          AuthService.setToken(response.token);
+        }
+        AuthService.setUser(response.user);
+        setUser(response.user);
+
+        // 🔒 REDIRECT LOGIC: Handle redirect after successful login
+        if (redirectUrl) {
+          const targetUrl = redirectUrl;
+          setRedirectUrl(null); // Clear redirect URL
+          window.location.href = targetUrl;
+        }
+      } catch (error) {
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [redirectUrl]);
+    },
+    [redirectUrl]
+  );
 
   // OPTIMIZED: Memoize register function
   const register = useCallback(async (userData: any) => {
     try {
       setIsLoading(true);
       const response = await AuthService.register(userData);
-      
+
       // Register doesn't return token, so don't save it
       AuthService.setUser(response.user);
       setUser(response.user);
@@ -98,23 +109,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // OPTIMIZED: Memoize context value untuk mencegah re-render yang tidak perlu
-  const value: AuthContextType = useMemo(() => ({
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    redirectUrl,
-    login,
-    register,
-    logout,
-    updateUser,
-    setRedirectUrl,
-  }), [user, isLoading, redirectUrl, login, register, logout, updateUser, setRedirectUrl]);
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+  const value: AuthContextType = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      redirectUrl,
+      login,
+      register,
+      logout,
+      updateUser,
+      setRedirectUrl,
+    }),
+    [
+      user,
+      isLoading,
+      redirectUrl,
+      login,
+      register,
+      logout,
+      updateUser,
+      setRedirectUrl,
+    ]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

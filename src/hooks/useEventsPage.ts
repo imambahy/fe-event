@@ -23,10 +23,10 @@ export type FlatEvent = {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
-  
+
   // Derived status (calculated from dates and published state)
   status: "draft" | "upcoming" | "ongoing" | "ended";
-  
+
   // Calculated fields from backend
   averageRating?: number;
   totalReviews?: number;
@@ -34,13 +34,13 @@ export type FlatEvent = {
   isFree?: boolean;
   isFeatured?: boolean;
   time?: string;
-  
+
   // Aggregated data
   ticketTypes?: TicketType[];
   totalCapacity?: number;
   totalTicketsSold?: number;
   totalTransactions?: number;
-  
+
   // Relations (if needed for display)
   reviews?: any[];
   _count?: {
@@ -69,63 +69,108 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<number[]>([]);
-  
+
   const debouncedSearch = useDebounce(search, 300);
   const queryClient = useQueryClient();
   const { user } = useAuth(); // Get current user for organizerId filtering
-  
+
   // Fetch organizer's events from API with simple fallback
-  const { data: eventsResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ["my-events", user?.id], 
+  const {
+    data: eventsResponse,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["my-events", user?.id],
     queryFn: async () => {
-      console.log('🔍 Fetching events for user:', user, 'role:', user?.role);
+      console.log("🔍 Fetching events for user:", user, "role:", user?.role);
 
       if (!user?.id) {
-        console.error('❌ No user ID available', { user, userType: typeof user });
+        console.error("❌ No user ID available", {
+          user,
+          userType: typeof user,
+        });
         throw new Error("User not authenticated - ID missing");
       }
 
       if (user.role !== "ORGANIZER") {
-        console.error('❌ User is not an organizer:', user.role);
+        console.error("❌ User is not an organizer:", user.role);
         throw new Error("Only organizers can view their events");
       }
 
       try {
         // Primary: Try MY_EVENTS endpoint
-        console.log('📡 Calling MY_EVENTS endpoint:', API_ENDPOINTS.EVENTS.MY_EVENTS);
+        console.log(
+          "📡 Calling MY_EVENTS endpoint:",
+          API_ENDPOINTS.EVENTS.MY_EVENTS
+        );
         const response = await api.get(API_ENDPOINTS.EVENTS.MY_EVENTS);
-        console.log('✅ MY_EVENTS Success:', response.data?.length || 0, 'events');
-        
+        console.log(
+          "✅ MY_EVENTS Success:",
+          response.data?.length || 0,
+          "events"
+        );
+
         // Verify organizerId matches current user
         if (response.data?.length > 0) {
-          const mismatchedEvents = response.data.filter((event: any) => event.organizerId !== user?.id);
+          const mismatchedEvents = response.data.filter(
+            (event: any) => event.organizerId !== user?.id
+          );
           if (mismatchedEvents.length > 0) {
-            console.warn('⚠️ Found events with organizerId not matching current user:', mismatchedEvents.length);
+            console.warn(
+              "⚠️ Found events with organizerId not matching current user:",
+              mismatchedEvents.length
+            );
           } else {
-            console.log('✅ All events belong to current organizer (ID:', user?.id, ')');
+            console.log(
+              "✅ All events belong to current organizer (ID:",
+              user?.id,
+              ")"
+            );
           }
         }
-        
+
         return response.data;
       } catch (primaryError: any) {
-        console.error('❌ MY_EVENTS Failed:', primaryError.response?.status, primaryError.response?.data);
+        console.error(
+          "❌ MY_EVENTS Failed:",
+          primaryError.response?.status,
+          primaryError.response?.data
+        );
 
         // Fallback: Try GET_ALL and filter by organizerId
         try {
-          console.log('🔄 Trying fallback with GET_ALL');
+          console.log("🔄 Trying fallback with GET_ALL");
           const fallbackResponse = await api.get(API_ENDPOINTS.EVENTS.GET_ALL);
-          console.log('🔄 Using GET_ALL fallback:', fallbackResponse.data?.length || 0, 'total events');
-          
+          console.log(
+            "🔄 Using GET_ALL fallback:",
+            fallbackResponse.data?.length || 0,
+            "total events"
+          );
+
           // Filter by organizerId in fallback
-          const filteredData = fallbackResponse.data?.filter((event: any) => event.organizerId === user?.id) || [];
-          console.log('✅ Filtered fallback events for organizer ID', user?.id, ':', filteredData.length, 'events');
-          
+          const filteredData =
+            fallbackResponse.data?.filter(
+              (event: any) => event.organizerId === user?.id
+            ) || [];
+          console.log(
+            "✅ Filtered fallback events for organizer ID",
+            user?.id,
+            ":",
+            filteredData.length,
+            "events"
+          );
+
           return {
             fallback: true,
-            data: filteredData
+            data: filteredData,
           };
         } catch (fallbackError: any) {
-          console.error('❌ Both endpoints failed:', fallbackError.response?.status, fallbackError.response?.data);
+          console.error(
+            "❌ Both endpoints failed:",
+            fallbackError.response?.status,
+            fallbackError.response?.data
+          );
           throw fallbackError;
         }
       }
@@ -145,42 +190,52 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
 
     // Extract data array from response
     let src = eventsResponse;
-    
+
     // Handle fallback response structure
     if (eventsResponse.fallback) {
-      console.log('🔄 Using fallback data');
+      console.log("🔄 Using fallback data");
       src = eventsResponse.data || [];
     }
-    
+
     // Handle paginated response
-    if (src && typeof src === 'object' && 'data' in src) {
+    if (src && typeof src === "object" && "data" in src) {
       src = src.data;
     }
-    
+
     // Ensure we have an array
     if (!Array.isArray(src)) {
       src = [];
     }
 
-    console.log('📊 Processing', src.length, 'events');
+    console.log("📊 Processing", src.length, "events");
 
     // Additional safety check: Ensure all events belong to current organizer
     if (user?.id && src.length > 0) {
       const beforeCount = src.length;
       src = src.filter((item: any) => item.organizerId === user.id);
       const afterCount = src.length;
-      
+
       if (beforeCount !== afterCount) {
-        console.warn('⚠️ Filtered out', beforeCount - afterCount, 'events not belonging to organizer', user.id);
+        console.warn(
+          "⚠️ Filtered out",
+          beforeCount - afterCount,
+          "events not belonging to organizer",
+          user.id
+        );
       }
-      console.log('✅ Verified all', afterCount, 'events belong to organizer ID:', user.id);
+      console.log(
+        "✅ Verified all",
+        afterCount,
+        "events belong to organizer ID:",
+        user.id
+      );
     }
-    
+
     return src.map((item: any) => {
       const now = new Date();
       const startDate = new Date(item.startDate);
       const endDate = new Date(item.endDate);
-      
+
       // Determine status based on dates and published state
       let status = "draft";
       if (item.published) {
@@ -191,9 +246,16 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
 
       // Calculate aggregated data from ticketTypes
       const ticketTypes = item.ticketTypes || [];
-      const totalCapacity = ticketTypes.reduce((total: number, ticket: any) => total + (ticket.totalSeats || 0), 0);
-      const totalTicketsSold = ticketTypes.reduce((total: number, ticket: any) => total + ((ticket.totalSeats || 0) - (ticket.availableSeats || 0)), 0);
-      
+      const totalCapacity = ticketTypes.reduce(
+        (total: number, ticket: any) => total + (ticket.totalSeats || 0),
+        0
+      );
+      const totalTicketsSold = ticketTypes.reduce(
+        (total: number, ticket: any) =>
+          total + ((ticket.totalSeats || 0) - (ticket.availableSeats || 0)),
+        0
+      );
+
       return {
         // Core Event fields from Prisma schema
         id: item.id,
@@ -209,10 +271,10 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
         createdAt: item.createdAt || "",
         updatedAt: item.updatedAt || "",
         deletedAt: item.deletedAt,
-        
+
         // Derived status
-        status: status as "draft" | "upcoming" | "ongoing" |  "ended",
-        
+        status: status as "draft" | "upcoming" | "ongoing" | "ended",
+
         // Calculated fields from backend (if available)
         averageRating: item.averageRating,
         totalReviews: item.totalReviews,
@@ -220,13 +282,13 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
         isFree: item.isFree,
         isFeatured: item.isFeatured,
         time: item.time,
-        
+
         // Aggregated data
         ticketTypes: ticketTypes,
         totalCapacity,
         totalTicketsSold,
         totalTransactions: item._count?.transactions || 0,
-        
+
         // Relations
         reviews: item.reviews,
         _count: item._count,
@@ -238,8 +300,8 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
   const filteredEvents = useMemo(() => {
     if (!debouncedSearch) return events;
     const query = debouncedSearch.toLowerCase();
-    return events.filter(event => 
-      Object.values(event).some(value => 
+    return events.filter((event) =>
+      Object.values(event).some((value) =>
         String(value).toLowerCase().includes(query)
       )
     );
@@ -253,19 +315,22 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
 
   // Selection handlers
   const toggleSelect = useCallback((id: number, checked: boolean) => {
-    setSelected(prev => 
-      checked ? [...prev, id] : prev.filter(x => x !== id)
+    setSelected((prev) =>
+      checked ? [...prev, id] : prev.filter((x) => x !== id)
     );
   }, []);
 
-  const selectAllOnPage = useCallback((checked: boolean) => {
-    const pageIds = currentPageData.map(event => event.id);
-    setSelected(prev => 
-      checked 
-        ? [...new Set([...prev, ...pageIds])]
-        : prev.filter(id => !pageIds.includes(id))
-    );
-  }, [currentPageData]);
+  const selectAllOnPage = useCallback(
+    (checked: boolean) => {
+      const pageIds = currentPageData.map((event) => event.id);
+      setSelected((prev) =>
+        checked
+          ? [...new Set([...prev, ...pageIds])]
+          : prev.filter((id) => !pageIds.includes(id))
+      );
+    },
+    [currentPageData]
+  );
 
   // Status badge utility (based on backend status logic)
   const getStatusBadgeClass = useCallback((status: string) => {
@@ -282,7 +347,7 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
     const now = new Date();
     const startDate = new Date(event.startDate);
     const endDate = new Date(event.endDate);
-    
+
     if (!event.published) return "draft";
     if (now < startDate) return "upcoming";
     if (now >= startDate && now <= endDate) return "ongoing";
@@ -294,32 +359,33 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
     setSelected([]);
   }, []);
 
-  console.log('📈 Returning', currentPageData.length, 'events to dashboard');
+  console.log("📈 Returning", currentPageData.length, "events to dashboard");
 
   return {
     // Data
     events: currentPageData,
     totalEvents: filteredEvents.length,
     totalPages,
-    
+
     // API states
     isLoading,
     error,
-    
+    refetch,
+
     // Search
     search,
     setSearch,
-    
+
     // Pagination
     page,
     setPage,
-    
+
     // Selection
     selected,
     toggleSelect,
     selectAllOnPage,
     clearSelection,
-    
+
     // Utils
     getStatusBadgeClass,
     getEventStatus,
@@ -330,7 +396,7 @@ export function useEventsPage({ pageSize = 5 }: UseEventsPageOptions = {}) {
       userRole: user?.role,
       isQueryEnabled: !!user?.id,
       rawResponseType: typeof eventsResponse,
-      rawEventsCount: events.length
-    }
+      rawEventsCount: events.length,
+    },
   };
 }

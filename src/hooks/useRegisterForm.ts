@@ -5,22 +5,24 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthMutation } from "@/hooks/api/useAuth";
 import { RegisterDto, UserRole } from "@/types/auth.type";
-import { 
-  customerRegisterSchema, 
+import {
+  customerRegisterSchema,
   organizerRegisterSchema,
   CustomerRegisterFormData,
-  OrganizerRegisterFormData 
+  OrganizerRegisterFormData,
 } from "@/validations/auth/register.validation";
 
 export function useRegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<"customer" | "organizer">("customer");
+  const [selectedRole, setSelectedRole] = useState<"customer" | "organizer">(
+    "customer"
+  );
   const [error, setError] = useState("");
-  
+
   // Auth hook
   const { register, isRegisterLoading, registerError } = useAuthMutation();
-  
+
   const customerForm = useForm<CustomerRegisterFormData>({
     resolver: zodResolver(customerRegisterSchema),
     defaultValues: {
@@ -45,8 +47,11 @@ export function useRegisterForm() {
   const onCustomerSubmit = async (data: CustomerRegisterFormData) => {
     try {
       setError("");
-      console.log("Customer Register data:", { ...data, role: UserRole.CUSTOMER });
-      
+      console.log("Customer Register data:", {
+        ...data,
+        role: UserRole.CUSTOMER,
+      });
+
       // Prepare register data
       const registerData: RegisterDto = {
         name: data.name,
@@ -55,7 +60,7 @@ export function useRegisterForm() {
         role: UserRole.CUSTOMER,
         referralCode: data.referralCode || undefined,
       };
-      
+
       // Call register API
       register(registerData);
     } catch (error) {
@@ -66,8 +71,11 @@ export function useRegisterForm() {
   const onOrganizerSubmit = async (data: OrganizerRegisterFormData) => {
     try {
       setError("");
-      console.log("Organizer Register data:", { ...data, role: UserRole.ORGANIZER });
-      
+      console.log("Organizer Register data:", {
+        ...data,
+        role: UserRole.ORGANIZER,
+      });
+
       // Prepare register data
       const registerData: RegisterDto = {
         name: data.name,
@@ -75,7 +83,7 @@ export function useRegisterForm() {
         password: data.password,
         role: UserRole.ORGANIZER,
       };
-      
+
       // Call register API
       register(registerData);
     } catch (error) {
@@ -94,7 +102,9 @@ export function useRegisterForm() {
   // Handle register error
   useEffect(() => {
     if (registerError) {
-      const errorMessage = (registerError as any)?.response?.data?.message || "Registration failed. Please try again.";
+      const errorMessage =
+        (registerError as any)?.response?.data?.message ||
+        "Registration failed. Please try again.";
       setError(errorMessage);
     }
   }, [registerError]);
